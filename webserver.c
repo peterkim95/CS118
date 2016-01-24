@@ -121,22 +121,86 @@ int main(void)
 						// Print to console
 						char buffer[512];
 						memset(buffer, '\0', 512);
-						int n = read(new_fd, buffer, 511);
+						int x = read(new_fd, buffer, 511);
 
-						if (n < 0)
+						if (x < 0)
               perror("Socket Reading Failed!");
-		//printf("BUFFER:\n%s\n", buffer);
+
+            printf("<<< HTTP REQUEST MESSAGE >>>\n%s\n", buffer);
+
             char* filename;
             const char spc[2] = " ";
             filename = strtok(buffer, spc);
-	filename = strtok(NULL, spc);	// grabs second token that contains the file name with a leading slash
-	filename++;	// we don't want the leading slash
-            //printf("TOKEN:\n%s\n", filename);
+            filename = strtok(NULL, spc);	// grabs second token that contains the file name with a leading slash
+            filename++;	// we don't want the leading slash
 
+            if (strlen(filename) <= 0)  // if no file is requested
+              filename = "no*file";
 
 						// Serve the requested file
+            if (filename == "no*file")
+            {
+              send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
+              send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
+              printf("ERROR: No file specified!\n");
+              goto: CLOSE_CONNECTION;
+            }
 
-            close(new_fd);
+            // Open file
+            FILE *filep = fopen(filename, "r");
+
+            if (!filep) // file not found in directory
+            {
+              send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
+              send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
+              printf("ERROR: File not found!\n");
+              goto: CLOSE_CONNECTION;
+            }
+
+            // obtaining the file size
+            fseek (filep , 0 , SEEK_END);
+            long flsize = ftell(filep);
+            rewind (filep);
+
+            // allocate enough memory to contain the whole file
+            char* f;
+            f = (char*) malloc(sizeof(char) * flsize);
+
+            if (!f) // file allocation went wrong somewhere
+            {
+              send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
+              send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
+              printf("ERROR: File allocation error!\n");
+              goto: CLOSE_CONNECTION;
+            }
+
+            // Copy file into buffer
+            size_t flen = fread(f, 1, flsize, filep);
+
+            if (flen != flsize)  // check no reading error has ocurred.
+            {
+              send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
+              send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
+              printf("ERROR: File reading error!\n");
+              goto: CLOSE_CONNECTION;
+            }
+
+            // Null terminating the file buffer
+            f[flen] = '\0';
+
+            // Send appropriate HTTP response header to client
+
+
+            // send file to client browser
+        		send(new_fd, f, flen, 0);
+
+        		printf("SUCCESS: File \"%s\" served to client!\n", filename);
+
+            // Free up file pointer resources.
+            fclose(filep);
+            free(f);
+
+            CLOSE_CONNECTION: close(new_fd);
             exit(0);
         }
         close(new_fd);  // parent doesn't need this
