@@ -125,12 +125,13 @@ int main(void)
 
 						if (n < 0)
               perror("Socket Reading Failed!");
-
+		//printf("BUFFER:\n%s\n", buffer);
             char* filename;
             const char spc[2] = " ";
-            filename = strtok(buffer, space);
-
-            printf("TOKEN:\n%s\n", filename);
+            filename = strtok(buffer, spc);
+	filename = strtok(NULL, spc);	// grabs second token that contains the file name with a leading slash
+	filename++;	// we don't want the leading slash
+            //printf("TOKEN:\n%s\n", filename);
 
 
 						// Serve the requested file
