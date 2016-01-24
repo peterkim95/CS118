@@ -239,12 +239,28 @@ int main(void)
             // content length
             char contentlength[50];
           	sprintf (contentlength, "Content-Length: %d", (unsigned int)flen);
-          	strcat(contentLength, "\r\n");
+          	strcat(contentlength, "\r\n");
 
             memcpy(msg+offset, contentlength, strlen(contentlength));
             offset += strlen(contentlength);
 
             // content type
+            char* ctype = "Content-Type: text/plain\r\n"  // assume it is text type intially
+            char* ftype;
+            ftype = strtok(filename, ".");
+            ftype = strtok(NULL, ".");
+
+            if (strcmp(ftype, "html") == 0)
+              ctype = "Content-Type: text/html\r\n";
+            else if (strcmp(ftype, "jpg") == 0)
+              ctype = "Content-Type: image/jpg\r\n";
+            else if (strcmp(ftype, "gif") == 0)
+              ctype = "Content-Type: image/gif\r\n";
+
+            memcpy(msg+offset, ctype, strlen(ctype));
+            offset+=strlen(ctype);
+
+            memcpy(msg+offset, "\r\n\0", 3);
 
             // print response to console
             printf("<<< HTTP RESPONSE MESSAGE >>>\n%s\n", msg);
