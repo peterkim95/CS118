@@ -143,7 +143,7 @@ int main(void)
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
               printf("ERROR: No file specified!\n");
-              goto: CLOSE_CONNECTION;
+              goto CLOSE_CONNECTION;
             }
 
             // Open file
@@ -154,7 +154,7 @@ int main(void)
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
               printf("ERROR: File not found!\n");
-              goto: CLOSE_CONNECTION;
+              goto CLOSE_CONNECTION;
             }
 
             // obtaining the file size
@@ -171,7 +171,7 @@ int main(void)
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
               printf("ERROR: File allocation error!\n");
-              goto: CLOSE_CONNECTION;
+              goto CLOSE_CONNECTION;
             }
 
             // Copy file into buffer
@@ -182,7 +182,7 @@ int main(void)
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
               printf("ERROR: File reading error!\n");
-              goto: CLOSE_CONNECTION;
+              goto CLOSE_CONNECTION;
             }
 
             // Null terminating the file buffer
