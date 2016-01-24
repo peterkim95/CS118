@@ -245,7 +245,7 @@ int main(void)
             offset += strlen(contentlength);
 
             // content type
-            char* ctype = "Content-Type: text/plain\r\n"  // assume it is text type intially
+            char* ctype = "Content-Type: text/plain\r\n";  // assume it is text type intially
             char* ftype;
             ftype = strtok(filename, ".");
             ftype = strtok(NULL, ".");
