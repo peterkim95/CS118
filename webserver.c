@@ -10,8 +10,10 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <time.h>  // for easier time formatting for response header
+#include <sys/stat.h>
 
-#define PORT "3490"  // the port users will be connecting to
+#define PORT "1738"  // the port users will be connecting to
 
 #define BACKLOG 10     // how many pending connections queue will hold
 
@@ -19,9 +21,7 @@ void sigchld_handler(int s)
 {
     // waitpid() might overwrite errno, so we save and restore it:
     int saved_errno = errno;
-
     while(waitpid(-1, NULL, WNOHANG) > 0);
-
     errno = saved_errno;
 }
 
@@ -29,10 +29,8 @@ void sigchld_handler(int s)
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
 {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in*)sa)->sin_addr);
-    }
-
+    if (sa->sa_family == AF_INET)
+      return &(((struct sockaddr_in*)sa)->sin_addr);
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
@@ -189,6 +187,70 @@ int main(void)
             f[flen] = '\0';
 
             // Send appropriate HTTP response header to client
+
+            // Header message buffer
+            char msg[512];
+
+            // Status code
+            char* status;
+            status = "HTTP/1.1 200 OK\r\n";
+
+            memcpy(msg, status, strlen(status));
+            int offset = strlen(status);
+
+            // Connection status
+            char* connection;
+            connection = "Connection: close\r\n";
+
+            memcpy(msg+offset, connection, strlen(connection));
+            offset += strlen(connection);
+
+            // Date & Time
+            time_t rawnow;
+            time(&rawnow);
+            struct tm* info;
+          	info = gmtime(&rawnow);
+          	char date[50];
+          	strftime(date, 50, "Date: %a, %d %b %Y %T %Z", info);
+          	strcat(date, "\r\n");
+
+            memcpy(msg+offset, date, strlen(date));
+            offset += strlen(date);
+
+            // Server info
+            char* server;
+            server = "Server: CS118Lab1Pseudo/1.0\r\n";
+
+            memcpy(msg+offset, server, strlen(server));
+            offset += strlen(server);
+
+            // last modified
+          	struct stat st;
+          	stat(filename, &st); // get file info
+            struct tm* lmclock;
+            lmclock = gmtime(&(st.st_mtime));
+          	char lm[50];
+          	strftime(lm, 50, "Last-Modified: %a, %d %b %Y %T %Z", lmclock);
+          	strcat(lm, "\r\n");
+
+            memcpy(msg+offset, lm, strlen(lm));
+            offset += strlen(lm);
+
+            // content length
+            char contentlength[50];
+          	sprintf (contentlength, "Content-Length: %d", (unsigned int)flen);
+          	strcat(contentLength, "\r\n");
+
+            memcpy(msg+offset, contentlength, strlen(contentlength));
+            offset += strlen(contentlength);
+
+            // content type
+
+            // print response to console
+            printf("<<< HTTP RESPONSE MESSAGE >>>\n%s\n", msg);
+
+            // send response to client as header
+          	send(new_fd, msg, strlen(msg), 0);
 
 
             // send file to client browser
