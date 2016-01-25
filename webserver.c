@@ -13,7 +13,7 @@
 #include <time.h>  // for easier time formatting for response header
 #include <sys/stat.h>
 
-#define PORT "1738"  // the port users will be connecting to
+#define PORT "3490"  // the port users will be connecting to
 
 #define BACKLOG 10     // how many pending connections queue will hold
 
@@ -112,14 +112,14 @@ int main(void)
             get_in_addr((struct sockaddr *)&their_addr),
             s, sizeof s);
         printf("server: got connection from %s\n", s);
-
+        printf("1\n");
         if (!fork()) { // this is the child process
             close(sockfd); // child doesn't need the listener
 
 						// Print to console
 						char buffer[512];
 						memset(buffer, '\0', 512);
-						int x = read(new_fd, buffer, 511);
+						int x = read(new_fd, buffer, 511);  // leave one final character for the nullbyte
 
 						if (x < 0)
               perror("Socket Reading Failed!");
@@ -131,19 +131,16 @@ int main(void)
             filename = strtok(buffer, spc);
             filename = strtok(NULL, spc);	// grabs second token that contains the file name with a leading slash
             filename++;	// we don't want the leading slash
+            //printf(filename);
 
             if (strlen(filename) <= 0)  // if no file is requested
-              filename = "no*file";
-
-						// Serve the requested file
-            if (filename == "no*file")
             {
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
-              printf("ERROR: No file specified!\n");
+              printf("ERROR: No file specified!\n\n");
               goto CLOSE_CONNECTION;
             }
-
+            printf("ASDASD\n");
             // Open file
             FILE *filep = fopen(filename, "r");
 
@@ -151,15 +148,15 @@ int main(void)
             {
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
-              printf("ERROR: File not found!\n");
+              printf("ERROR: File not found!\n\n");
               goto CLOSE_CONNECTION;
             }
-
+            printf("A\n");
             // obtaining the file size
             fseek (filep , 0 , SEEK_END);
             long flsize = ftell(filep);
             rewind (filep);
-
+            printf("B\n");
             // allocate enough memory to contain the whole file
             char* f;
             f = (char*) malloc(sizeof(char) * flsize);
@@ -168,10 +165,10 @@ int main(void)
             {
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
-              printf("ERROR: File allocation error!\n");
+              printf("ERROR: File allocation error!\n\n");
               goto CLOSE_CONNECTION;
             }
-
+            printf("C\n");
             // Copy file into buffer
             size_t flen = fread(f, 1, flsize, filep);
 
@@ -179,13 +176,13 @@ int main(void)
             {
               send(new_fd, "HTTP/1.1 404 Not Found\r\n\r\n", strlen("HTTP/1.1 404 Not Found\r\n\r\n"), 0);
               send(new_fd, "<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n", strlen("<html><head></head><body><h1>404 Not Found</h1></body></html>\r\n"), 0);
-              printf("ERROR: File reading error!\n");
+              printf("ERROR: File reading error!\n\n");
               goto CLOSE_CONNECTION;
             }
 
             // Null terminating the file buffer
             f[flen] = '\0';
-
+            printf("D\n");
             // Send appropriate HTTP response header to client
 
             // Header message buffer
@@ -205,6 +202,8 @@ int main(void)
             memcpy(msg+offset, connection, strlen(connection));
             offset += strlen(connection);
 
+            printf("Connection added!\n");
+
             // Date & Time
             time_t rawnow;
             time(&rawnow);
@@ -216,14 +215,14 @@ int main(void)
 
             memcpy(msg+offset, date, strlen(date));
             offset += strlen(date);
-
+            printf("Date added!\n");
             // Server info
             char* server;
             server = "Server: CS118Lab1Pseudo/1.0\r\n";
 
             memcpy(msg+offset, server, strlen(server));
             offset += strlen(server);
-
+            printf("SErver added!\n");
             // last modified
           	struct stat st;
           	stat(filename, &st); // get file info
@@ -235,7 +234,7 @@ int main(void)
 
             memcpy(msg+offset, lm, strlen(lm));
             offset += strlen(lm);
-
+            printf("LM added!\n");
             // content length
             char contentlength[50];
           	sprintf (contentlength, "Content-Length: %d", (unsigned int)flen);
@@ -243,23 +242,26 @@ int main(void)
 
             memcpy(msg+offset, contentlength, strlen(contentlength));
             offset += strlen(contentlength);
-
+            printf("CL added!\n");
             // content type
-            char* ctype = "Content-Type: text/plain\r\n";  // assume it is text type intially
+            char* ctype;
+            ctype = "Content-Type: text/plain\r\n";  // assume it is text type intially
             char* ftype;
+            printf("FILENAME: %s\n", filename);
             ftype = strtok(filename, ".");
             ftype = strtok(NULL, ".");
-
+            printf("NEW FILENAME?: %s\n",filename);
+            printf("FTYPE: %s\n", ftype);
             if (strcmp(ftype, "html") == 0)
               ctype = "Content-Type: text/html\r\n";
             else if (strcmp(ftype, "jpg") == 0)
               ctype = "Content-Type: image/jpg\r\n";
             else if (strcmp(ftype, "gif") == 0)
               ctype = "Content-Type: image/gif\r\n";
-
+            printf("CTYPE: %s\n",ctype);
             memcpy(msg+offset, ctype, strlen(ctype));
             offset+=strlen(ctype);
-
+            printf("Content Type added!\n");
             memcpy(msg+offset, "\r\n\0", 3);
 
             // print response to console
@@ -272,14 +274,21 @@ int main(void)
             // send file to client browser
         		send(new_fd, f, flen, 0);
 
+
         		printf("SUCCESS: File \"%s\" served to client!\n", filename);
 
             // Free up file pointer resources.
             fclose(filep);
             free(f);
+            printf("Freeed up resrouced!\n");
+            // goto CLOSE_CONNECTION;
+            CLOSE_CONNECTION:
+              printf("Closing Connection...!\n");
+              close(new_fd);
+              printf("ClosED Connection...!\n");
+              exit(0);
 
-            CLOSE_CONNECTION: close(new_fd);
-            exit(0);
+
         }
         close(new_fd);  // parent doesn't need this
     }
