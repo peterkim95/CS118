@@ -28,6 +28,11 @@ int main(void)
   sockfd = socket(AF_INET, SOCK_STREAM, 0);	//create socket
   if (sockfd < 0) error("ERROR opening socket");
   memset((char *) &serv_addr, 0, sizeof(serv_addr));	//reset memory
+  
+  // Set socket reusable to true to avoid "Address already in use" error
+  int optval;
+  optval = 1;
+  setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof optval);
 
   //fill in address info
 
