@@ -28,7 +28,7 @@ int main(void)
   sockfd = socket(AF_INET, SOCK_STREAM, 0);	//create socket
   if (sockfd < 0) error("ERROR opening socket");
   memset((char *) &serv_addr, 0, sizeof(serv_addr));	//reset memory
-  
+
   // Set socket reusable to true to avoid "Address already in use" error
   int optval;
   optval = 1;
@@ -177,7 +177,7 @@ int main(void)
 
       memcpy(msg+offset, lm, strlen(lm));
       offset += strlen(lm);
-      // printf("LM added!\n");
+
       // content length
       char contentlength[50];
       sprintf (contentlength, "Content-Length: %d", (unsigned int)flen);
@@ -215,7 +215,7 @@ int main(void)
       // send file to client browser
       send(new_fd, f, flen, 0);
 
-      printf("SUCCESS: File \"%s\" served to client!\n", filename);
+      printf("SUCCESS: File '%s' served to client!\n\n", filename);
 
       // Free up file pointer resources.
       fclose(filep);
