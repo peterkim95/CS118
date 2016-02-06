@@ -56,9 +56,12 @@ int main(void)
     //accept connections
     new_fd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
     if (new_fd < 0) error("ERROR on accept");
-
-    // Fork off separate child process to handle each client request
-    if (!fork())
+    
+    // Fork off child process that handles each incoming request
+    int pid = fork();
+    if (pid < 0)
+      error("Error on fork!");
+    if (pid == 0) 
     {
       // Child process doesn't listener
       close(sockfd);
@@ -234,7 +237,10 @@ int main(void)
         close(new_fd);
         exit(0);
     }
-    close(new_fd);
+    else  // Parent Process simply closes the connection
+    {
+      close(new_fd);
+    }
   }
   return 0;
 }
